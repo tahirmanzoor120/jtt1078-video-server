@@ -17,11 +17,7 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
-import io.netty.handler.timeout.IdleStateHandler;
 import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by matrixy on 2019/4/9.
@@ -39,11 +35,9 @@ public class VideoServerApp
         VideoServer videoServer = new VideoServer();
         HttpServer httpServer = new HttpServer();
 
-        Signal.handle(new Signal("TERM"), new SignalHandler()
-        {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
-            public void handle(Signal signal)
-            {
+            public void run() {
                 videoServer.shutdown();
                 httpServer.shutdown();
             }
