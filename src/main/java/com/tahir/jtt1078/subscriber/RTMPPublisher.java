@@ -11,7 +11,7 @@ public class RTMPPublisher extends Thread
 {
     static Logger logger = LoggerFactory.getLogger(RTMPPublisher.class);
 
-    String tag = null;
+    String tag;
     Process process = null;
 
     public RTMPPublisher(String tag)
@@ -22,13 +22,12 @@ public class RTMPPublisher extends Thread
     @Override
     public void run()
     {
-        InputStream stderr = null;
+        InputStream stderr;
         int len = -1;
         byte[] buff = new byte[512];
         boolean debugMode = "on".equalsIgnoreCase(Configs.get("debug.mode"));
 
-        try
-        {
+        try {
             String rtmpUrl = Configs.get("rtmp.url").replaceAll("\\{TAG\\}", tag);
             String cmd = String.format("%s -i http://localhost:%d/video/%s -vcodec copy -acodec aac -f flv %s",
                         Configs.get("ffmpeg.path"),
@@ -36,18 +35,20 @@ public class RTMPPublisher extends Thread
                         tag,
                         rtmpUrl
                     );
-            logger.info("Execute: {}", cmd);
+
+            logger.info("Executing command: {}", cmd);
             process = Runtime.getRuntime().exec(cmd);
+
             stderr = process.getErrorStream();
-            while ((len = stderr.read(buff)) > -1)
-            {
+            while ((len = stderr.read(buff)) > -1) {
                 if (debugMode) System.out.print(new String(buff, 0, len));
             }
-            logger.info("Process FFMPEG exited...");
+
+            logger.info("Video published");
         }
         catch(Exception ex)
         {
-            logger.error("publish failed", ex);
+            logger.error("RTMP publishing failed", ex);
         }
     }
 

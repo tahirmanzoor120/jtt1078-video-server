@@ -3,7 +3,6 @@ package com.tahir.jtt1078.http;
 import com.tahir.jtt1078.entity.Media;
 import com.tahir.jtt1078.publisher.PublishManager;
 import com.tahir.jtt1078.server.Session;
-import com.tahir.jtt1078.util.*;
 import com.tahir.jtt1078.util.FileUtils;
 import com.tahir.jtt1078.util.Packet;
 import io.netty.buffer.ByteBuf;
@@ -16,12 +15,9 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Created by matrixy on 2019/8/13.
- */
 public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
 {
-    static Logger logger = LoggerFactory.getLogger(NettyHttpServerHandler.class);
+    final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerHandler.class);
     static final byte[] HTTP_403_DATA = "<h1>403 Forbidden</h1><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding-->".getBytes();
     static final String HEADER_ENCODING = "ISO-8859-1";
 
@@ -33,11 +29,10 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         FullHttpRequest fhr = (FullHttpRequest) msg;
         String uri = fhr.uri();
         Packet resp = Packet.create(1024);
-        // uri的第二段，就是通道标签
-        if (uri.startsWith("/video/"))
-        {
-            String tag = uri.substring("/video/".length());
 
+        // The second paragraph of uri is the channel label
+        if (uri.startsWith("/video/")) {
+            String tag = uri.substring("/video/".length());
             resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Content-Type: video/x-flv\r\n".getBytes(HEADER_ENCODING));
@@ -46,20 +41,14 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             resp.addBytes("Access-Control-Allow-Origin: *\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Access-Control-Allow-Credentials: true\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
-
             ctx.writeAndFlush(resp.getBytes()).await();
 
-            // 订阅视频数据
+            // Subscribe to video data
             long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Video, ctx).getId();
             setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
-        }
-        else if (uri.equals("/test/multimedia"))
-        {
+        } else if (uri.equals("/test/multimedia")) {
             responseHTMLFile("/multimedia.html", ctx);
-        }
-        else
-        {
-
+        } else {
             ByteBuf body = Unpooled.buffer(HTTP_403_DATA.length);
             body.writeBytes(HTTP_403_DATA);
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(403), body);
@@ -82,7 +71,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         }
     }
 
-    // 响应静态文件内容
+    // Respond to static file content
     private void responseHTMLFile(String htmlFilePath, ChannelHandlerContext ctx)
     {
         byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream(htmlFilePath));

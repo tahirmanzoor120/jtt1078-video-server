@@ -17,9 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * Created by matrixy on 2020/1/11.
- */
 public class Channel
 {
     static Logger logger = LoggerFactory.getLogger(Channel.class);
@@ -77,8 +74,7 @@ public class Channel
         if (firstTimestamp == -1) firstTimestamp = timeoffset;
         this.publishing = true;
         this.buffer.write(h264);
-        while (true)
-        {
+        while (true) {
             byte[] nalu = readNalu();
             if (nalu == null) break;
             if (nalu.length < 4) continue;
@@ -87,7 +83,7 @@ public class Channel
 
             if (flvTag == null) continue;
 
-            // 广播给所有的观众
+            // Broadcast to all viewers
             broadcastVideo(timeoffset, flvTag);
         }
     }

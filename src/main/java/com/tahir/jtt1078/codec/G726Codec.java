@@ -8,27 +8,27 @@ import java.io.FileOutputStream;
 
 public class G726Codec extends AudioCodec {
 
-    // pcm采样率
+    // pcm sampling rate
     private static final int PCM_SAMPLE = 8000;
 
-    // pcm采样点
+    // pcm sampling point
     private static final int PCM_POINT = 320;
 
-    // 音频通道数
+    //Number of audio channels
     private static final int CHANNEL = 1;
 
-    // 码率
+    // code rate
     private static final int G726_BIT_RATE_16000 = 16000;
     private static final int G726_BIT_RATE_24000 = 24000;
     private static final int G726_BIT_RATE_32000 = 32000;
     private static final int G726_BIT_RATE_40000 = 40000;
 
 
-
     @Override
     public byte[] toPCM(byte[] data) {
         int pos = 0;
-        // 如果前四字节是00 01 52 00，则是海思头，需要去掉
+
+        // If the first four bytes are 00 01 52 00, it is a HiSilicon header and needs to be removed.
         if (data[0] == 0x00 && data[1] == 0x01 && (data[2] & 0xff) == (data.length - 4) / 2 && data[3] == 0x00) {
             pos = 4;
         }
@@ -37,12 +37,12 @@ public class G726Codec extends AudioCodec {
 
         int point = PCM_POINT;
 
-        // 计算G726的码率
+        // Calculate the code rate of G726
         int rateBit = length * 8 * PCM_SAMPLE/point;
 
         G726 g726 = null;
 
-        // 码率
+        // code rate
         if (rateBit == G726_BIT_RATE_40000) {
             g726 = new G726_40();
         }
@@ -87,8 +87,8 @@ public class G726Codec extends AudioCodec {
         }
     }
 
-    // mac下在终端中输入 /Applications/VLC.app/Contents/MacOS/VLC --demux=rawaud --rawaud-channels 1 --rawaud-samplerate 8000 ${path}
-    // 修改${path} 的值为pcm路径，即可播放转码后的pcm文件
+    // Enter /Applications/VLC.app/Contents/MacOS/VLC in the terminal under mac --demux=rawaud --rawaud-channels 1 --rawaud-samplerate 8000 ${path}
+    // Modify the value of ${path} to the pcm path to play the transcoded pcm file.
     public static void main(String[] args) throws Exception {
 
         readWrite(Thread.currentThread().getContextClassLoader().getResource("g726/in_40.g726").getPath(),

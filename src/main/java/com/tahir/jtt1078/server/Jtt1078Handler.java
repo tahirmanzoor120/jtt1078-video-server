@@ -5,62 +5,56 @@ import com.tahir.jtt1078.publisher.PublishManager;
 import com.tahir.jtt1078.util.Packet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
-/**
- * Created by matrixy on 2019/4/9.
- */
 public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
 {
     static Logger logger = LoggerFactory.getLogger(Jtt1078Handler.class);
-    private static final AttributeKey<Session> SESSION_KEY = AttributeKey.valueOf("session-key");
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) throws Exception
     {
         io.netty.channel.Channel nettyChannel = ctx.channel();
 
         packet.seek(8);
-        String sim = packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD();
-        int channel = packet.nextByte() & 0xff;
-        String tag = sim + "-" + channel;
 
-        if (SessionManager.contains(nettyChannel, "tag") == false)
-        {
+        String deviceId = packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD();
+        int channel = packet.nextByte() & 0xff;
+        String tag = deviceId + "-" + channel;
+
+        if (SessionManager.contains(nettyChannel, "tag") == false) {
             Channel chl = PublishManager.getInstance().open(tag);
             SessionManager.set(nettyChannel, "tag", tag);
-            logger.info("start publishing: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), sim, channel);
+            logger.info("Start publishing: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), deviceId, channel);
         }
 
         Integer sequence = SessionManager.get(nettyChannel, "video-sequence");
         if (sequence == null) sequence = 0;
-        // 1. 做好序号
-        // 2. 音频需要转码后提供订阅
+
+        // 1. Make a serial number
+        // 2. Audio needs to be transcoded before subscription is provided
         int lengthOffset = 28;
         int dataType = (packet.seek(15).nextByte() >> 4) & 0x0f;
         int pkType = packet.seek(15).nextByte() & 0x0f;
-        // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
+
+        // Transparent transmission data type: 0100, without subsequent time and Last I Frame Interval and Last Frame Interval fields
         if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
         else if (dataType == 0x03) lengthOffset = 28 - 4;
 
         int pt = packet.seek(5).nextByte() & 0x7f;
 
-        if (dataType == 0x00 || dataType == 0x01 || dataType == 0x02)
-        {
-            // 碰到结束标记时，序号+1
-            if (pkType == 0 || pkType == 2)
-            {
+        if (dataType == 0x00 || dataType == 0x01 || dataType == 0x02) {
+            // When the end mark is encountered, the sequence number + 1
+            if (pkType == 0 || pkType == 2) {
                 sequence += 1;
                 SessionManager.set(nettyChannel, "video-sequence", sequence);
             }
+
             long timestamp = packet.seek(16).nextLong();
             PublishManager.getInstance().publishVideo(tag, sequence, timestamp, pt, packet.seek(lengthOffset + 2).nextBytes());
-        }
-        else if (dataType == 0x03)
-        {
+        } else if (dataType == 0x03) {
             long timestamp = packet.seek(16).nextLong();
             byte[] data = packet.seek(lengthOffset + 2).nextBytes();
             PublishManager.getInstance().publishAudio(tag, sequence, timestamp, pt, data);
@@ -89,7 +83,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.READER_IDLE) {
                 String tag = SessionManager.get(ctx.channel(), "tag");
-                logger.info("read timeout: {}",tag);
+                logger.info("Reading timeout: {}",tag);
                 release(ctx.channel());
             }
         }
@@ -100,7 +94,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         String tag = SessionManager.get(channel, "tag");
         if (tag != null)
         {
-            logger.info("close netty channel: {}", tag);
+            logger.info("Closing netty channel: {}", tag);
             PublishManager.getInstance().close(tag);
         }
     }

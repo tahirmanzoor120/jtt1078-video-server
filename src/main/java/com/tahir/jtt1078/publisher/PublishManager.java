@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PublishManager
 {
-    static Logger logger = LoggerFactory.getLogger(PublishManager.class);
+    final Logger LOGGER = LoggerFactory.getLogger(PublishManager.class);
     ConcurrentHashMap<String, Channel> channels;
 
     private PublishManager()
@@ -29,9 +29,11 @@ public final class PublishManager
             chl = new Channel(tag);
             channels.put(tag, chl);
         }
-        Subscriber subscriber = null;
+
+        Subscriber subscriber;
+
         if (type.equals(Media.Type.Video)) subscriber = chl.subscribe(ctx);
-        else throw new RuntimeException("unknown media type: " + type);
+        else throw new RuntimeException("Unknown media type: " + type);
 
         subscriber.setName("subscriber-" + tag + "-" + subscriber.getId());
         subscriber.start();
@@ -42,30 +44,41 @@ public final class PublishManager
     public void publishAudio(String tag, int sequence, long timestamp, int payloadType, byte[] data)
     {
         Channel chl = channels.get(tag);
-        if (chl != null) chl.writeAudio(timestamp, payloadType, data);
+        if (chl != null) {
+            LOGGER.info("Publishing audio: " + chl.tag);
+            chl.writeAudio(timestamp, payloadType, data);
+        }
     }
 
     public void publishVideo(String tag, int sequence, long timestamp, int payloadType, byte[] data)
     {
         Channel chl = channels.get(tag);
-        if (chl != null) chl.writeVideo(sequence, timestamp, payloadType, data);
+
+        if (chl != null) {
+            LOGGER.info("Publishing video: " + chl.tag);
+            chl.writeVideo(sequence, timestamp, payloadType, data);
+        }
     }
 
     public Channel open(String tag)
     {
         Channel chl = channels.get(tag);
-        if (chl == null)
-        {
+
+        if (chl == null) {
             chl = new Channel(tag);
             channels.put(tag, chl);
         }
-        if (chl.isPublishing()) throw new RuntimeException("channel already publishing");
+
+        if (chl.isPublishing()) throw new RuntimeException("Channel already publishing");
+
+        LOGGER.info("Opening channel: " + chl.tag);
         return chl;
     }
 
     public void close(String tag)
     {
         Channel chl = channels.remove(tag);
+        LOGGER.info("Closing channel: " + chl.tag);
         if (chl != null) chl.close();
     }
 
@@ -73,7 +86,7 @@ public final class PublishManager
     {
         Channel chl = channels.get(tag);
         if (chl != null) chl.unsubscribe(watcherId);
-        logger.info("unsubscribe: {} - {}", tag, watcherId);
+        LOGGER.info("Unsubscribing: {} - {}", tag, watcherId);
     }
     static final PublishManager instance = new PublishManager();
     public static void init() { }

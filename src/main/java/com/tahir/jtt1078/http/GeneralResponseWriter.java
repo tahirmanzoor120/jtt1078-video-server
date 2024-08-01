@@ -4,9 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-/**
- * Created by matrixy on 2019/11/25.
- */
 public class GeneralResponseWriter extends MessageToByteEncoder<byte[]>
 {
     @Override
