@@ -58,13 +58,13 @@ public abstract class AudioCodec
 ```
 
 ### 准备工具
-项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
+项目里准备了一个测试程序（`src/main/java/test.com.tahir.jtt1078.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
 
-另外，新增了 `cn.org.hentai.jtt1078.test.RTPGenerate` 类，用于读取bin文件，并且修改SIM卡号和通道号，创建大量数据文件以便于压力测试。
+另外，新增了 `test.com.tahir.jtt1078.RTPGenerate` 类，用于读取bin文件，并且修改SIM卡号和通道号，创建大量数据文件以便于压力测试。
 
 ### 测试步骤
 1. 配置好服务器端，修改`app.properties`里的配置项。
-2. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
+2. 直接在IDE里运行`app.com.tahir.jtt1078.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
 3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
 4. 开始后，控制台里会输出显示**start publishing: 013800138999-2**的字样
 5. 打开浏览器，输入 **http://localhost:3333/test/multimedia#013800138999-2** 后回车

@@ -4,12 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cn.org.hentai</groupId>
+    <groupId>com.tahir</groupId>
     <artifactId>jtt1078-video-server</artifactId>
     <version>1.0-0</version>
-
-    <name>jtt1078-video-server</name>
-    <url>http://www.hentai.org.cn/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -69,7 +66,7 @@
                     <archive>
                         <manifest>
                             <!-- 此处指定main方法入口的class -->
-                            <mainClass>cn.org.hentai.jtt1078.app.VideoServerApp</mainClass>
+                            <mainClass>com.tahir.jtt1078.app.VideoServerApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
