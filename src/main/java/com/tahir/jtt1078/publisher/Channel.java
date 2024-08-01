@@ -50,30 +50,27 @@ public class Channel
         return publishing;
     }
 
-    public Subscriber subscribe(ChannelHandlerContext ctx)
-    {
-        logger.info("channel: {} -> {}, subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
-
+    public Subscriber subscribe(ChannelHandlerContext ctx) {
+        logger.info("Channel: {} -> {}, Subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
         Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
         this.subscribers.add(subscriber);
         return subscriber;
     }
 
-    public void writeAudio(long timestamp, int pt, byte[] data)
-    {
-        if (audioCodec == null)
-        {
+    public void writeAudio(long timestamp, int pt, byte[] data)     {
+        if (audioCodec == null) {
             audioCodec = AudioCodec.getCodec(pt);
-            logger.info("audio codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
+            logger.info("Audio Codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
         }
+
         broadcastAudio(timestamp, audioCodec.toPCM(data));
     }
 
-    public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264)
-    {
+    public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264) {
         if (firstTimestamp == -1) firstTimestamp = timeoffset;
         this.publishing = true;
         this.buffer.write(h264);
+
         while (true) {
             byte[] nalu = readNalu();
             if (nalu == null) break;

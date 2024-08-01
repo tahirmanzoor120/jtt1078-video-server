@@ -4,9 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by matrixy on 2019/4/10.
- */
 public final class Session
 {
     Map<String, Object> attributes;

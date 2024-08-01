@@ -6,9 +6,6 @@ import de.sciss.jump3r.mp3.Lame;
 import javax.sound.sampled.AudioFormat;
 import java.io.ByteArrayOutputStream;
 
-/**
- * Created by matrixy on 2020/4/27.
- */
 public class MP3Encoder
 {
     static final AudioFormat PCM_FORMAT = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 1, 1 * 2, -1, false);

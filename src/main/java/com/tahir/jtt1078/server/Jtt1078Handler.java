@@ -14,8 +14,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
 {
     static Logger logger = LoggerFactory.getLogger(Jtt1078Handler.class);
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Packet packet) throws Exception
-    {
+    protected void channelRead0(ChannelHandlerContext ctx, Packet packet) throws Exception {
         io.netty.channel.Channel nettyChannel = ctx.channel();
 
         packet.seek(8);
@@ -62,15 +61,13 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception
-    {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
         release(ctx.channel());
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
-    {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         // super.exceptionCaught(ctx, cause);
         cause.printStackTrace();
         release(ctx.channel());
@@ -89,11 +86,9 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
     }
 
-    private void release(io.netty.channel.Channel channel)
-    {
+    private void release(io.netty.channel.Channel channel) {
         String tag = SessionManager.get(channel, "tag");
-        if (tag != null)
-        {
+        if (tag != null) {
             logger.info("Closing netty channel: {}", tag);
             PublishManager.getInstance().close(tag);
         }

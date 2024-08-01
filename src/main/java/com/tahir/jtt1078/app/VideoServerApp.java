@@ -29,6 +29,7 @@ public class VideoServerApp
     public static void main(String[] args) throws Exception
     {
         Configs.init("/app.properties");
+
         PublishManager.init();
         SessionManager.init();
 

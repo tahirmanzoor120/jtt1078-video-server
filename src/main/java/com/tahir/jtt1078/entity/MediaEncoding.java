@@ -36,7 +36,6 @@ public final class MediaEncoding
         ADPCMA,
         MP4AUDIO,
         AMR,                // 28
-
         H264,               // 98
         H265,
         AVS,
