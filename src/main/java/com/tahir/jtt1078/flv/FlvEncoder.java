@@ -4,9 +4,6 @@ import com.tahir.jtt1078.util.Packet;
 
 import java.io.ByteArrayOutputStream;
 
-/**
- * Created by matrixy on 2020/1/3.
- */
 public final class FlvEncoder
 {
     Packet flvHeader;
@@ -59,8 +56,7 @@ public final class FlvEncoder
         return this.lastIFrame;
     }
 
-    public byte[] write(byte[] nalu, int nTimeStamp)
-    {
+    public byte[] write(byte[] nalu, int nTimeStamp) {
         this.videoTimeStamp = nTimeStamp;
 
         if (nalu == null || nalu.length <= 4) return null;
@@ -98,7 +94,7 @@ public final class FlvEncoder
 
         if (videoFrame.size() == 0) return null;
 
-        // 如果当前NAL单元为I祯，则缓存一个
+        // If the current NAL unit is I frame, cache one
         if (naluType == 0x05)
         {
             lastIFrame = videoFrame.toByteArray();
@@ -112,7 +108,7 @@ public final class FlvEncoder
         flvHeader.addByte((byte)'F');
         flvHeader.addByte((byte)'L');
         flvHeader.addByte((byte)'V');
-        flvHeader.addByte((byte)0x01);                 // version
+        flvHeader.addByte((byte)0x01); // version
         flvHeader.addByte((byte)(0x00 | (haveVideo ? 0x01 : 0x00) | (haveAudio ? 0x04 : 0x00)));
         flvHeader.addInt(0x09);
         flvHeader.addInt(0x00);

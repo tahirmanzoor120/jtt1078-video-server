@@ -19,12 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 
-/**
- * Created by matrixy on 2019/4/9.
- */
 public class VideoServerApp
 {
-    private static Logger logger = LoggerFactory.getLogger(VideoServerApp.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(VideoServerApp.class);
 
     public static void main(String[] args) throws Exception
     {
@@ -74,7 +71,7 @@ public class VideoServerApp
 
             int port = Configs.getInt("server.port", 1078);
             Channel ch = serverBootstrap.bind(InetAddress.getByName("0.0.0.0"), port).sync().channel();
-            logger.info("Video Server Started. Port: {}", port);
+            LOGGER.info("Video Server Started. Port: {}", port);
             ch.closeFuture();
         }
 
@@ -125,12 +122,12 @@ public class VideoServerApp
             {
                 int port = Configs.getInt("server.http.port", 3333);
                 ChannelFuture f = bootstrap.bind(InetAddress.getByName("0.0.0.0"), port).sync();
-                logger.info("HTTP Server Started. Port: {}", port);
+                LOGGER.info("HTTP Server Started. Port: {}", port);
                 f.channel().closeFuture().sync();
             }
             catch (InterruptedException e)
             {
-                logger.error("http server error", e);
+                LOGGER.error("http server error", e);
             }
             finally
             {

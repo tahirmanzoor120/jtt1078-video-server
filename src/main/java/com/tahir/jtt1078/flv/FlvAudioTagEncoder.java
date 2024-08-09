@@ -5,10 +5,8 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Flv 音频封装编码
- * author:zhouyili (11861744@qq.com)
- */
+// Flv audio encapsulation encoding
+
 public class FlvAudioTagEncoder {
     public static final Logger log = LoggerFactory.getLogger(FlvAudioTagEncoder.class);
 
@@ -29,7 +27,7 @@ public class FlvAudioTagEncoder {
         buffer.writeByte(formatAndRateAndSize);
         buffer.writeBytes(audioTag.getData());
         //-------------data end  -------
-        buffer.writeInt(buffer.writerIndex());//应该等于11+tagDataSize
+        buffer.writeInt(buffer.writerIndex()); // Should be equal to 11 + tagDataSize
         return buffer;
     }
 

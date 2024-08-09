@@ -9,12 +9,9 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Created by matrixy on 2020/1/11.
- */
 public abstract class Subscriber extends Thread
 {
-    static Logger logger = LoggerFactory.getLogger(Subscriber.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Subscriber.class);
     static final AtomicLong SEQUENCE = new AtomicLong(0L);
 
     private long id;
@@ -68,15 +65,16 @@ public abstract class Subscriber extends Thread
             }
             catch(Exception ex)
             {
-                //销毁线程时，如果有锁wait就不会销毁线程，抛出InterruptedException异常
+                // When destroying the thread, if there is a lock wait,
+                // the thread will not be destroyed and InterruptedException will be thrown.
                 if (ex instanceof InterruptedException)
                 {
                     break loop;
                 }
-                logger.error("send failed", ex);
+                LOGGER.error("send failed", ex);
             }
         }
-        logger.info("subscriber closed");
+        LOGGER.info("subscriber closed");
     }
 
     protected byte[] take()

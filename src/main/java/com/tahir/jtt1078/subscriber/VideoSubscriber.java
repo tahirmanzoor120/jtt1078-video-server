@@ -10,9 +10,6 @@ import com.tahir.jtt1078.util.HttpChunk;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
-/**
- * Created by matrixy on 2020/1/13.
- */
 public class VideoSubscriber extends Subscriber
 {
     private long videoTimestamp = 0;
@@ -31,13 +28,13 @@ public class VideoSubscriber extends Subscriber
     {
         if (lastVideoFrameTimeOffset == 0) lastVideoFrameTimeOffset = timeoffset;
 
-        // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
+        // Has it been sent before? If not, you need to reissue the FLV HEADER
         if (videoHeaderSent == false && flvEncoder.videoReady())
         {
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
 
-            // 直接下发第一个I帧
+            // Directly deliver the first I frame
             byte[] iFrame = flvEncoder.getLastIFrame();
             if (iFrame != null)
             {
@@ -50,8 +47,8 @@ public class VideoSubscriber extends Subscriber
 
         if (data == null) return;
 
-        // 修改时间戳
-        // System.out.println("Time: " + videoTimestamp + ", current: " + timeoffset);
+        //Modify timestamp
+         System.out.println("Time: " + videoTimestamp + ", current: " + timeoffset);
         FLVUtils.resetTimestamp(data, (int) videoTimestamp);
         videoTimestamp += (int)(timeoffset - lastVideoFrameTimeOffset);
         lastVideoFrameTimeOffset = timeoffset;
@@ -68,16 +65,17 @@ public class VideoSubscriber extends Subscriber
         if (!videoHeaderSent) return;
 
         byte[] mp3Data = mp3Encoder.encode(data);
+
         if (mp3Data == null || mp3Data.length == 0) return;
+
         AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)1, (byte) 0, mp3Data);
         byte[] frameData = null;
-        try
-        {
+
+        try {
             ByteBuf audioBuf = audioEncoder.encode(audioTag);
             frameData = ByteBufUtils.readReadableBytes(audioBuf);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             e.printStackTrace();
         }
 

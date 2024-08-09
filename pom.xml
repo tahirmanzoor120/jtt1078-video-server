@@ -46,7 +46,7 @@
             <version>2.4</version>
             <classifier>jdk15</classifier>
         </dependency>
-        <!--pcm转mp3-->
+        <!--PCM to MP3-->
         <dependency>
             <groupId>de.sciss</groupId>
             <artifactId>jump3r</artifactId>
@@ -65,7 +65,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <!-- 此处指定main方法入口的class -->
+                            <!-- App class -->
                             <mainClass>com.tahir.jtt1078.app.VideoServerApp</mainClass>
                         </manifest>
                     </archive>

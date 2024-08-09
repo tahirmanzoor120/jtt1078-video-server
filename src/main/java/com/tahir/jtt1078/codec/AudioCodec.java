@@ -16,7 +16,6 @@ public abstract class AudioCodec
         else if (MediaEncoding.Encoding.G711A.ordinal() == encoding) return new G711Codec();
         else if (MediaEncoding.Encoding.G711U.ordinal() == encoding) return new G711UCodec();
         else if (MediaEncoding.Encoding.G726.ordinal() == encoding) return new G726Codec();
-        // else if (Audio.Encoding.G726.equals(encoding)) ;
         else return new SilenceCodec();
     }
 }

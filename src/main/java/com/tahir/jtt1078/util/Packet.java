@@ -2,11 +2,7 @@ package com.tahir.jtt1078.util;
 
 import java.util.Arrays;
 
-/**
- * Created by matrixy on 2018/4/14.
- */
-public class Packet
-{
+public class Packet {
     int size = 0;
     int offset = 0;
     int maxSize = 0;
@@ -14,7 +10,7 @@ public class Packet
 
     protected Packet()
     {
-        // do nothing here..
+        // do nothing here
     }
 
     public int size()
@@ -31,9 +27,10 @@ public class Packet
     }
 
     /**
-     * 按指定的大小初始化一个数据包，一般大小为2 + 2 + 8 + 4 + DATA_LENGTH
+     * Initialize a data packet according to the specified size.
+     * Generally the size is 2 + 2 + 8 + 4 + DATA_LENGTH
      *
-     * @param packetLength 数据包最大字节数
+     * @param packetLength maximum number of bytes of data packet
      * @param bytes
      * @return
      */
@@ -79,48 +76,44 @@ public class Packet
         return this;
     }
 
-    // 如果b的值为0x7e，则自动转义
+    // If the value of b is 0x7e, it will be automatically escaped
     public Packet addByteAutoQuote(byte b)
     {
-        if (b == 0x7e)
-        {
+        if (b == 0x7e) {
             addByte((byte)0x7d);
             addByte((byte)0x02);
         }
-        else if (b == 0x7d)
-        {
+
+        else if (b == 0x7d) {
             addByte((byte)0x7d);
             addByte((byte)0x01);
         }
-        else
-        {
+
+        else {
             addByte(b);
         }
+
         return this;
     }
 
-    public Packet putByte(byte b)
-    {
+    public Packet putByte(byte b) {
         this.data[offset++] = b;
         return this;
     }
 
-    public Packet addShort(short s)
-    {
+    public Packet addShort(short s) {
         this.data[size++] = (byte) ((s >> 8) & 0xff);
         this.data[size++] = (byte) (s & 0xff);
         return this;
     }
 
-    public Packet putShort(short s)
-    {
+    public Packet putShort(short s) {
         this.data[offset++] = (byte) ((s >> 8) & 0xff);
         this.data[offset++] = (byte) (s & 0xff);
         return this;
     }
 
-    public Packet addInt(int i)
-    {
+    public Packet addInt(int i) {
         this.data[size++] = (byte) ((i >> 24) & 0xff);
         this.data[size++] = (byte) ((i >> 16) & 0xff);
         this.data[size++] = (byte) ((i >> 8) & 0xff);
@@ -128,8 +121,7 @@ public class Packet
         return this;
     }
 
-    public Packet putInt(int i)
-    {
+    public Packet putInt(int i) {
         this.data[offset++] = (byte) ((i >> 24) & 0xff);
         this.data[offset++] = (byte) ((i >> 16) & 0xff);
         this.data[offset++] = (byte) ((i >> 8) & 0xff);
@@ -137,8 +129,7 @@ public class Packet
         return this;
     }
 
-    public Packet addLong(long l)
-    {
+    public Packet addLong(long l) {
         this.data[size++] = (byte) ((l >> 56) & 0xff);
         this.data[size++] = (byte) ((l >> 48) & 0xff);
         this.data[size++] = (byte) ((l >> 40) & 0xff);
@@ -150,8 +141,7 @@ public class Packet
         return this;
     }
 
-    public Packet putLong(long l)
-    {
+    public Packet putLong(long l) {
         this.data[offset++] = (byte) ((l >> 56) & 0xff);
         this.data[offset++] = (byte) ((l >> 48) & 0xff);
         this.data[offset++] = (byte) ((l >> 40) & 0xff);
@@ -168,22 +158,19 @@ public class Packet
         return addBytes(b, b.length);
     }
 
-    public Packet addBytes(byte[] b, int len)
-    {
+    public Packet addBytes(byte[] b, int len) {
         System.arraycopy(b, 0, this.data, size, len);
         size += len;
         return this;
     }
 
-    public Packet putBytes(byte[] b)
-    {
+    public Packet putBytes(byte[] b) {
         System.arraycopy(b, 0, this.data, offset, b.length);
         offset += b.length;
         return this;
     }
 
-    public Packet rewind()
-    {
+    public Packet rewind() {
         this.offset = 0;
         return this;
     }
@@ -213,16 +200,14 @@ public class Packet
         return (this.data[offset++] & 0xff) << 24 | (this.data[offset++] & 0xff) << 16 | (this.data[offset++] & 0xff) << 8 | (this.data[offset++] & 0xff);
     }
 
-    public String nextBCD()
-    {
+    public String nextBCD() {
         byte val = this.data[offset++];
         int ch1 = (val >> 4) & 0x0f;
         int ch2 = (val & 0x0f);
         return ch1 + "" + ch2;
     }
 
-    public Packet addBCD(String num)
-    {
+    public Packet addBCD(String num) {
         for (int i = 0, l = num.length(); i < l; i+=2)
         {
             char a = (char)(num.charAt(i) - '0');
@@ -232,13 +217,11 @@ public class Packet
         return this;
     }
 
-    public long nextLong()
-    {
+    public long nextLong() {
         return ((long) this.data[offset++] & 0xff) << 56 | ((long) this.data[offset++] & 0xff) << 48 | ((long) this.data[offset++] & 0xff) << 40 | ((long) this.data[offset++] & 0xff) << 32 | ((long) this.data[offset++] & 0xff) << 24 | ((long) this.data[offset++] & 0xff) << 16 | ((long) this.data[offset++] & 0xff) << 8 | ((long) this.data[offset++] & 0xff);
     }
 
-    public byte[] nextBytes(int length)
-    {
+    public byte[] nextBytes(int length) {
         byte[] buf = new byte[length];
         System.arraycopy(this.data, offset, buf, 0, length);
         offset += length;
@@ -250,28 +233,24 @@ public class Packet
         return nextBytes(size - offset);
     }
 
-    public Packet skip(int offset)
-    {
+    public Packet skip(int offset) {
         this.offset += offset;
         return this;
     }
 
-    public Packet seek(int index)
-    {
+    public Packet seek(int index) {
         this.offset = index;
         return this;
     }
 
-    public Packet reset()
-    {
+    public Packet reset() {
         this.offset = 0;
         this.size = 0;
 
         return this;
     }
 
-    public byte[] getBytes()
-    {
+    public byte[] getBytes() {
         if (size == maxSize) return this.data;
         else
         {
@@ -286,8 +265,7 @@ public class Packet
         return size - offset > 0;
     }
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         ByteUtils.dump(Packet.create(32).addBCD("013800138000").getBytes());
     }
 }

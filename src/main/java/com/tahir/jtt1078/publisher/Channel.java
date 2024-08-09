@@ -26,6 +26,7 @@ public class Channel
 
     String tag;
     boolean publishing;
+    boolean recording;
     ByteHolder buffer;
     AudioCodec audioCodec;
     FlvEncoder flvEncoder;

@@ -8,9 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by houcheng on 2019-12-11.
- */
 public final class PublishManager
 {
     final Logger LOGGER = LoggerFactory.getLogger(PublishManager.class);
@@ -35,7 +32,7 @@ public final class PublishManager
         if (type.equals(Media.Type.Video)) subscriber = chl.subscribe(ctx);
         else throw new RuntimeException("Unknown media type: " + type);
 
-        subscriber.setName("subscriber-" + tag + "-" + subscriber.getId());
+        subscriber.setName("Subscribed: " + tag + "-" + subscriber.getId());
         subscriber.start();
 
         return subscriber;
@@ -45,7 +42,6 @@ public final class PublishManager
     {
         Channel chl = channels.get(tag);
         if (chl != null) {
-            LOGGER.info("Publishing audio: " + chl.tag);
             chl.writeAudio(timestamp, payloadType, data);
         }
     }
@@ -55,7 +51,6 @@ public final class PublishManager
         Channel chl = channels.get(tag);
 
         if (chl != null) {
-            LOGGER.info("Publishing video: " + chl.tag);
             chl.writeVideo(sequence, timestamp, payloadType, data);
         }
     }
@@ -69,16 +64,16 @@ public final class PublishManager
             channels.put(tag, chl);
         }
 
-        if (chl.isPublishing()) throw new RuntimeException("Channel already publishing");
+        if (chl.isPublishing()) throw new RuntimeException("Channel is already publishing");
 
-        LOGGER.info("Opening channel: " + chl.tag);
+        LOGGER.info("Channel opened: " + chl.tag);
         return chl;
     }
 
     public void close(String tag)
     {
         Channel chl = channels.remove(tag);
-        LOGGER.info("Closing channel: " + chl.tag);
+        LOGGER.info("Channel closed: " + chl.tag);
         if (chl != null) chl.close();
     }
 
@@ -86,7 +81,7 @@ public final class PublishManager
     {
         Channel chl = channels.get(tag);
         if (chl != null) chl.unsubscribe(watcherId);
-        LOGGER.info("Unsubscribing: {} - {}", tag, watcherId);
+        LOGGER.info("Unsubscribed: {} - {}", tag, watcherId);
     }
     static final PublishManager instance = new PublishManager();
     public static void init() { }

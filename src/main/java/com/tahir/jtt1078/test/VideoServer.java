@@ -9,9 +9,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 
-/**
- * Created by houcheng on 2019-12-10.
- */
 public class VideoServer
 {
     public static void main(String[] args) throws Exception
@@ -38,6 +35,7 @@ public class VideoServer
         int len = -1;
         byte[] block = new byte[1024];
         Jtt1078Decoder decoder = new Jtt1078Decoder();
+
         while (true)
         {
             len = input.read(block);
@@ -51,7 +49,7 @@ public class VideoServer
 
                 int lengthOffset = 28;
                 int dataType = (p.seek(15).nextByte() >> 4) & 0x0f;
-                // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
+                // Transparent transmission data type: 0100, without subsequent time and Last I Frame Interval and Last Frame Interval fields
                 if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
                 else if (dataType == 0x03) lengthOffset = 28 - 4;
 

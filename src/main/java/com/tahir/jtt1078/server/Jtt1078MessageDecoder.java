@@ -1,7 +1,5 @@
 package com.tahir.jtt1078.server;
 
-import com.tahir.jtt1078.util.ByteUtils;
-import com.tahir.jtt1078.util.Configs;
 import com.tahir.jtt1078.util.Packet;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,14 +22,12 @@ public class Jtt1078MessageDecoder extends ByteToMessageDecoder
         int k = (int)Math.ceil(length / 512f);
 
         for (int i = 0; i < k; i++) {
-            // find the length of the current chunk.
-            // It's 512 bytes for all chunks except possibly the last one, which may be smaller.
+            // calculate length of block data.
+            // It's 512 bytes for all blocks except possibly the last one, which may be smaller.
             int l = i < k - 1 ? 512 : length - (i * 512);
-
             // read block
             in.readBytes(block, 0, l);
-
-            // decode block
+            // add block to the decoder's buffer
             decoder.write(block, 0, l);
 
             // continuously attempts to decode packets from the decoder until no more packets are available.
@@ -39,10 +35,8 @@ public class Jtt1078MessageDecoder extends ByteToMessageDecoder
             {
                 // try to decode a block
                 Packet p = decoder.decode();
-
                 // no packet, exit
                 if (p == null) break;
-
                 // add packet to output
                 out.add(p);
             }
