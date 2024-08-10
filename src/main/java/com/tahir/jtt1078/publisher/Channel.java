@@ -34,7 +34,6 @@ public class Channel
 
     String tag;
     boolean publishing;
-    boolean recording;
     ByteHolder buffer;
     AudioCodec audioCodec;
     FlvEncoder flvEncoder;
@@ -43,7 +42,6 @@ public class Channel
     private FileOutputStream videoOutputStream;
     private FileOutputStream audioOutputStream;
 
-    private final String dir = "d:\\eric\\";
     private String videoPath;
     private String audioPath;
 
@@ -58,31 +56,35 @@ public class Channel
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
 
-        if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false)
-        {
+        if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false) {
             this.rtmpPublisher = new RTMPPublisher(tag);
             this.rtmpPublisher.start();
         }
 
-        File directory = new File(dir + tag);
-        if (!directory.exists()) {
-            if (directory.mkdirs()) {
-                System.out.println("Directory created: " + directory);
-            } else {
-                System.out.println("Failed to create directory: " + directory);
+        String recordingDir = Configs.get("recording.path");
+        if (StringUtils.isEmpty(recordingDir) == false) {
+            String subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
+            LOGGER.info("Recording Directory: {}", subDirectory );
+            File directory = new File(subDirectory);
+            if (!directory.exists()) {
+                if (directory.mkdirs()) {
+                    System.out.println("Directory created: " + subDirectory);
+                } else {
+                    System.out.println("Failed to create directory: " + subDirectory);
+                }
             }
-        }
 
-        String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 
-        videoPath = (dir + tag + "\\video_" + formattedDateTime + ".h264");
-        audioPath = (dir + tag + "\\audio_" + formattedDateTime + ".pcm");
+            this.videoPath = (subDirectory + "\\video_" + formattedDateTime + ".h264");
+            this.audioPath = (subDirectory + "\\audio_" + formattedDateTime + ".pcm");
 
-        try {
-            this.videoOutputStream = new FileOutputStream(videoPath);
-            this.audioOutputStream = new FileOutputStream(audioPath);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            try {
+                this.videoOutputStream = new FileOutputStream(this.videoPath);
+                this.audioOutputStream = new FileOutputStream(this.audioPath);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -108,11 +110,13 @@ public class Channel
 
         byte[] pcmData = audioCodec.toPCM(data);
 
-        try {
-            audioOutputStream.write(pcmData);
-            audioOutputStream.flush();
-        } catch (IOException e) {
-            LOGGER.error("Error writing audio data to file", e);
+        if (audioOutputStream != null) {
+            try {
+                audioOutputStream.write(pcmData);
+                audioOutputStream.flush();
+            } catch (IOException e) {
+                LOGGER.error("Error writing audio data to file", e);
+            }
         }
 
         broadcastAudio(timestamp, pcmData);
@@ -130,11 +134,13 @@ public class Channel
             if (nalu == null) break;
             if (nalu.length < 4) continue;
 
-            try {
-                videoOutputStream.write(nalu);
-                videoOutputStream.flush();
-            } catch (IOException e) {
-                LOGGER.error("Error writing video data to file", e);
+            if (videoOutputStream != null) {
+                try {
+                    videoOutputStream.write(nalu);
+                    videoOutputStream.flush();
+                } catch (IOException e) {
+                    LOGGER.error("Error writing video data to file", e);
+                }
             }
 
             byte[] flvTag = this.flvEncoder.write(nalu, (int) (timeoffset - firstTimestamp));
@@ -194,12 +200,15 @@ public class Channel
             LOGGER.error("Error closing file output streams", e);
         }
 
-        String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + audioPath + " -r 25 -i " + videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + videoPath.substring(0, videoPath.length() - 4) + "mp4";
-        try {
-            Runtime.getRuntime().exec(command);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (videoOutputStream != null && audioOutputStream != null) {
+            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + this.audioPath + " -r 25 -i " + this.videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + this.videoPath.substring(0, this.videoPath.length() - 4) + "mp4";
+            try {
+                Runtime.getRuntime().exec(command);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+
     }
 
     public String getTimeDifference(Date pastTime) {
