@@ -20,8 +20,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 public class Channel
 {
@@ -45,17 +47,21 @@ public class Channel
     private String videoPath;
     private String audioPath;
 
+    private Date startTime;
+    private long size;
+
     public Channel(String tag)
     {
         this.tag = tag;
+        this.startTime = new Date(System.currentTimeMillis());
         this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
 
         if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false)
         {
-            rtmpPublisher = new RTMPPublisher(tag);
-            rtmpPublisher.start();
+            this.rtmpPublisher = new RTMPPublisher(tag);
+            this.rtmpPublisher.start();
         }
 
         File directory = new File(dir + tag);
@@ -93,6 +99,8 @@ public class Channel
     }
 
     public void writeAudio(long timestamp, int pt, byte[] data)     {
+        size += data.length;
+
         if (audioCodec == null) {
             audioCodec = AudioCodec.getCodec(pt);
             LOGGER.info("Audio Codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
@@ -111,6 +119,8 @@ public class Channel
     }
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264) {
+        size += h264.length;
+
         if (firstTimestamp == -1) firstTimestamp = timeoffset;
         this.publishing = true;
         this.buffer.write(h264);
@@ -168,6 +178,7 @@ public class Channel
 
     public void close()
     {
+        LOGGER.info("{} received in {}", formatBytes(this.size), getTimeDifference(this.startTime));
         for (Iterator<Subscriber> itr = subscribers.iterator(); itr.hasNext(); )
         {
             Subscriber subscriber = itr.next();
@@ -189,6 +200,41 @@ public class Channel
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getTimeDifference(Date pastTime) {
+        Date now = new Date();
+        long diffInMillis = now.getTime() - pastTime.getTime();
+
+        long hours = TimeUnit.MILLISECONDS.toHours(diffInMillis);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis) - TimeUnit.HOURS.toMinutes(hours);
+        StringBuilder result = getStringBuilder(diffInMillis, hours, minutes);
+
+        return result.toString().trim();
+    }
+
+    private static StringBuilder getStringBuilder(long diffInMillis, long hours, long minutes) {
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(diffInMillis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(diffInMillis));
+
+        StringBuilder result = new StringBuilder();
+        if (hours > 0) {
+            result.append(String.format("%02d hour ", hours));
+        }
+        if (minutes > 0) {
+            result.append(String.format("%02d minutes ", minutes));
+        }
+        if (seconds > 0) {
+            result.append(String.format("%02d seconds", seconds));
+        }
+        return result;
+    }
+
+    public static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        char unit = "KMGTPE".charAt(exp - 1);
+        double result = bytes / Math.pow(1024, exp);
+        return String.format("%.2f %sB", result, unit);
     }
 
     private byte[] readNalu()

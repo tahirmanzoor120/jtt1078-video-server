@@ -57,12 +57,14 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             byte[] data = packet.seek(lengthOffset + 2).nextBytes();
             long timestamp = packet.seek(16).nextLong();
             PublishManager.getInstance().publishVideo(tag, sequence, timestamp, payloadType, data);
+            LOGGER.info("Device: {} [{}]", tag, "Video");
         }
         // 0011：Audio Frame
         else if (dataType == 0x03) {
             long timestamp = packet.seek(16).nextLong();
             byte[] data = packet.seek(lengthOffset + 2).nextBytes();
             PublishManager.getInstance().publishAudio(tag, sequence, timestamp, payloadType, data);
+            LOGGER.info("Device: {} [{}]", tag, "Audio");
         }
     }
 

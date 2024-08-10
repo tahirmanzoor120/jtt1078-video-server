@@ -66,14 +66,14 @@ public final class PublishManager
 
         if (chl.isPublishing()) throw new RuntimeException("Channel is already publishing");
 
-        LOGGER.info("Channel opened: " + chl.tag);
+        // LOGGER.info("Channel opened: " + chl.tag);
         return chl;
     }
 
     public void close(String tag)
     {
         Channel chl = channels.remove(tag);
-        LOGGER.info("Channel closed: " + chl.tag);
+        // LOGGER.info("Channel closed: " + chl.tag);
         if (chl != null) chl.close();
     }
 
