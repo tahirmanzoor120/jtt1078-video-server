@@ -14,6 +14,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -32,6 +38,13 @@ public class Channel
     FlvEncoder flvEncoder;
     private long firstTimestamp = -1;
 
+    private FileOutputStream videoOutputStream;
+    private FileOutputStream audioOutputStream;
+
+    private final String dir = "d:\\eric\\";
+    private String videoPath;
+    private String audioPath;
+
     public Channel(String tag)
     {
         this.tag = tag;
@@ -43,6 +56,27 @@ public class Channel
         {
             rtmpPublisher = new RTMPPublisher(tag);
             rtmpPublisher.start();
+        }
+
+        File directory = new File(dir + tag);
+        if (!directory.exists()) {
+            if (directory.mkdirs()) {
+                System.out.println("Directory created: " + directory);
+            } else {
+                System.out.println("Failed to create directory: " + directory);
+            }
+        }
+
+        String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+        videoPath = (dir + tag + "\\video_" + formattedDateTime + ".h264");
+        audioPath = (dir + tag + "\\audio_" + formattedDateTime + ".pcm");
+
+        try {
+            this.videoOutputStream = new FileOutputStream(videoPath);
+            this.audioOutputStream = new FileOutputStream(audioPath);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -64,7 +98,16 @@ public class Channel
             LOGGER.info("Audio Codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
         }
 
-        broadcastAudio(timestamp, audioCodec.toPCM(data));
+        byte[] pcmData = audioCodec.toPCM(data);
+
+        try {
+            audioOutputStream.write(pcmData);
+            audioOutputStream.flush();
+        } catch (IOException e) {
+            LOGGER.error("Error writing audio data to file", e);
+        }
+
+        broadcastAudio(timestamp, pcmData);
     }
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264) {
@@ -76,6 +119,13 @@ public class Channel
             byte[] nalu = readNalu();
             if (nalu == null) break;
             if (nalu.length < 4) continue;
+
+            try {
+                videoOutputStream.write(nalu);
+                videoOutputStream.flush();
+            } catch (IOException e) {
+                LOGGER.error("Error writing video data to file", e);
+            }
 
             byte[] flvTag = this.flvEncoder.write(nalu, (int) (timeoffset - firstTimestamp));
 
@@ -125,6 +175,20 @@ public class Channel
             itr.remove();
         }
         if (rtmpPublisher != null) rtmpPublisher.close();
+
+        try {
+            if (videoOutputStream != null) videoOutputStream.close();
+            if (audioOutputStream != null) audioOutputStream.close();
+        } catch (IOException e) {
+            LOGGER.error("Error closing file output streams", e);
+        }
+
+        String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + audioPath + " -r 25 -i " + videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + videoPath.substring(0, videoPath.length() - 4) + "mp4";
+        try {
+            Runtime.getRuntime().exec(command);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private byte[] readNalu()
