@@ -47,8 +47,6 @@ public class VideoSubscriber extends Subscriber
 
         if (data == null) return;
 
-        //Modify timestamp
-         System.out.println("Time: " + videoTimestamp + ", current: " + timeoffset);
         FLVUtils.resetTimestamp(data, (int) videoTimestamp);
         videoTimestamp += (int)(timeoffset - lastVideoFrameTimeOffset);
         lastVideoFrameTimeOffset = timeoffset;

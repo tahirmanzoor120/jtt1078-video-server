@@ -74,7 +74,6 @@ public abstract class Subscriber extends Thread
                 LOGGER.error("send failed", ex);
             }
         }
-        LOGGER.info("subscriber closed");
     }
 
     protected byte[] take()

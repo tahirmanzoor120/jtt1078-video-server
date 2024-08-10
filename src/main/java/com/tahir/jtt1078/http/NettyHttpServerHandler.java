@@ -46,7 +46,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             // Subscribe to video data
             long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Video, ctx).getId();
             setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
-        } else if (uri.equals("/test/multimedia")) {
+        } else if (uri.equals("/multimedia")) {
             responseHTMLFile("/multimedia.html", ctx);
         } else {
             ByteBuf body = Unpooled.buffer(HTTP_403_DATA.length);

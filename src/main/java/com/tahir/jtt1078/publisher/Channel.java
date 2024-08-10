@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Channel
 {
-    static Logger logger = LoggerFactory.getLogger(Channel.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(Channel.class);
 
     ConcurrentLinkedQueue<Subscriber> subscribers;
     RTMPPublisher rtmpPublisher;
@@ -52,7 +52,7 @@ public class Channel
     }
 
     public Subscriber subscribe(ChannelHandlerContext ctx) {
-        logger.info("Channel: {} -> {}, Subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
+        LOGGER.info("Channel: {} -> {}, Subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
         Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
         this.subscribers.add(subscriber);
         return subscriber;
@@ -61,7 +61,7 @@ public class Channel
     public void writeAudio(long timestamp, int pt, byte[] data)     {
         if (audioCodec == null) {
             audioCodec = AudioCodec.getCodec(pt);
-            logger.info("Audio Codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
+            LOGGER.info("Audio Codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
         }
 
         broadcastAudio(timestamp, audioCodec.toPCM(data));

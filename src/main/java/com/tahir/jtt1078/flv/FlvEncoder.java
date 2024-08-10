@@ -30,7 +30,7 @@ public final class FlvEncoder
     public FlvEncoder(boolean haveVideo, boolean haveAudio)
     {
         this.haveVideo = haveVideo;
-        // this.haveAudio = haveAudio;
+        this.haveAudio = haveAudio;
         flvHeader = Packet.create(16);
         videoFrame = new ByteArrayOutputStream(2048 * 100);
         makeFlvHeader();
