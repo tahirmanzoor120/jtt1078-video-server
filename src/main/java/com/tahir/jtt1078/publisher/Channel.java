@@ -48,6 +48,7 @@ public class Channel
     private Date startTime;
     private long size;
     private String recordingDir;
+    private boolean recordingMode;
     private String subDirectory;
     private int recordingClipDuration; // seconds
 
@@ -63,10 +64,16 @@ public class Channel
             this.rtmpPublisher.start();
         }
 
-        this.recordingDir = Configs.get("recording.path");
-        this.recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
-        prepareRecordingDir();
-        prepareRecording();
+        recordingMode = Configs.getBoolean("recording.mode");
+
+        if (recordingMode) {
+            recordingDir = Configs.get("recording.path");
+            recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
+            prepareRecordingDir();
+            prepareRecording();
+        } else {
+            this.startTime = new Date();
+        }
     }
 
     public void prepareRecordingDir() {
@@ -180,11 +187,13 @@ public class Channel
             broadcastVideo(timeoffset, flvTag);
         }
 
-        long elapsedTime = getTimeDifferenceInSeconds();
-        System.out.println("Elapsed Time: " + elapsedTime);
-        if (elapsedTime  > recordingClipDuration) {
-            saveRecording();
-            prepareRecording();
+        if (recordingMode) {
+            long elapsedTime = getTimeDifferenceInSeconds();
+            System.out.println("Elapsed Time: " + elapsedTime);
+            if (elapsedTime  > recordingClipDuration) {
+                saveRecording();
+                prepareRecording();
+            }
         }
     }
 
@@ -228,7 +237,10 @@ public class Channel
             itr.remove();
         }
         if (rtmpPublisher != null) rtmpPublisher.close();
-        saveRecording();
+
+        if (recordingMode) {
+            saveRecording();
+        }
     }
 
     public String getTimeDifference() {

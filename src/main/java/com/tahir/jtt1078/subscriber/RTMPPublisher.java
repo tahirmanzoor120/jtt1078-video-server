@@ -25,7 +25,7 @@ public class RTMPPublisher extends Thread
         InputStream stderr;
         int len = -1;
         byte[] buff = new byte[512];
-        boolean debugMode = "on".equalsIgnoreCase(Configs.get("debug.mode"));
+        boolean debugMode = Configs.getBoolean("debug.mode");
 
         try {
             String rtmpUrl = Configs.get("rtmp.url").replaceAll("\\{TAG\\}", tag);

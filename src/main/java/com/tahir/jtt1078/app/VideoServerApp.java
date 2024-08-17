@@ -26,6 +26,15 @@ public class VideoServerApp
     public static void main(String[] args) throws Exception
     {
         Configs.init("/app.properties");
+        boolean debugMode = Configs.getBoolean("debug.mode");
+        LOGGER.info("Execution mode: {}", debugMode ? "Debug" : "Production" );
+        boolean recordingMode = Configs.getBoolean("recording.mode");
+        LOGGER.info("Recording mode: {}", recordingMode ? "On" : "Off");
+        if (recordingMode) {
+            String recordingPath = Configs.get("recording.path");
+            LOGGER.info("Recording directory: {}", recordingPath);
+            LOGGER.info("Clip duration: {} seconds", Configs.getInt("recording.clip.duration", 60));
+        }
 
         PublishManager.init();
         SessionManager.init();
