@@ -115,7 +115,11 @@ public class Channel
         }
 
         if (videoOutputStream != null && audioOutputStream != null) {
-            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + this.audioPath + " -r 25 -i " + this.videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + this.videoPath.substring(0, this.videoPath.length() - 4) + "mp4";
+            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " +
+                    this.audioPath + " -r 25 -i " + this.videoPath +
+                    " -c:v copy -c:a aac -strict experimental -vsync vfr " +
+                    this.videoPath.substring(0, this.videoPath.length() - 4) +
+                    "mp4";
             try {
                 Runtime.getRuntime().exec(command);
             } catch (IOException e) {

@@ -25,10 +25,9 @@ public class Jtt1078Decoder
             return null;
         }
 
-        if ((buffer.getInt(0) & 0x7fffffff) != 0x30316364)
-        {
-            String header = ByteUtils.toString(buffer.array(30));
-            LOGGER.info("Invalid Protocol Header: " + header);
+        if ((buffer.getInt(0) & 0x7fffffff) != 0x30316364) {
+            String dump = ByteUtils.toString(buffer.array(30));
+            LOGGER.info("Unknown Data: " + dump);
             return null;
         }
 

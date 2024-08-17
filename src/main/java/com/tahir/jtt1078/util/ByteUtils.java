@@ -1,8 +1,5 @@
 package com.tahir.jtt1078.util;
 
-/**
- * Created by matrixy on 2017/8/22.
- */
 public final class ByteUtils
 {
     public static byte[] parse(String hexString)
