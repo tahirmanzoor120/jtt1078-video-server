@@ -47,23 +47,31 @@ public class Channel
 
     private Date startTime;
     private long size;
+    private String recordingDir;
+    private String subDirectory;
+    private int recordingClipDuration; // seconds
 
     public Channel(String tag)
     {
         this.tag = tag;
-        this.startTime = new Date(System.currentTimeMillis());
         this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
 
-        if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false) {
+        if (!StringUtils.isEmpty(Configs.get("rtmp.url"))) {
             this.rtmpPublisher = new RTMPPublisher(tag);
             this.rtmpPublisher.start();
         }
 
-        String recordingDir = Configs.get("recording.path");
-        if (StringUtils.isEmpty(recordingDir) == false) {
-            String subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
+        this.recordingDir = Configs.get("recording.path");
+        this.recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
+        prepareRecordingDir();
+        prepareRecording();
+    }
+
+    public void prepareRecordingDir() {
+        if (!StringUtils.isEmpty(recordingDir)) {
+            this.subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
             LOGGER.info("Recording Directory: {}", subDirectory );
             File directory = new File(subDirectory);
             if (!directory.exists()) {
@@ -73,16 +81,37 @@ public class Channel
                     System.out.println("Failed to create directory: " + subDirectory);
                 }
             }
+        }
+    }
 
-            String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+    private void prepareRecording() {
+        this.startTime = new Date();
+        String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        this.size = 0L;
+        this.videoPath = (subDirectory + "\\video_" + formattedDateTime + ".h264");
+        this.audioPath = (subDirectory + "\\audio_" + formattedDateTime + ".pcm");
 
-            this.videoPath = (subDirectory + "\\video_" + formattedDateTime + ".h264");
-            this.audioPath = (subDirectory + "\\audio_" + formattedDateTime + ".pcm");
+        try {
+            this.videoOutputStream = new FileOutputStream(this.videoPath);
+            this.audioOutputStream = new FileOutputStream(this.audioPath);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    private void saveRecording() {
+        try {
+            if (videoOutputStream != null) videoOutputStream.close();
+            if (audioOutputStream != null) audioOutputStream.close();
+        } catch (IOException e) {
+            LOGGER.error("Error closing file output streams", e);
+        }
+
+        if (videoOutputStream != null && audioOutputStream != null) {
+            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + this.audioPath + " -r 25 -i " + this.videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + this.videoPath.substring(0, this.videoPath.length() - 4) + "mp4";
             try {
-                this.videoOutputStream = new FileOutputStream(this.videoPath);
-                this.audioOutputStream = new FileOutputStream(this.audioPath);
-            } catch (FileNotFoundException e) {
+                Runtime.getRuntime().exec(command);
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -150,6 +179,13 @@ public class Channel
             // Broadcast to all viewers
             broadcastVideo(timeoffset, flvTag);
         }
+
+        long elapsedTime = getTimeDifferenceInSeconds();
+        System.out.println("Elapsed Time: " + elapsedTime);
+        if (elapsedTime  > recordingClipDuration) {
+            saveRecording();
+            prepareRecording();
+        }
     }
 
     public void broadcastVideo(long timeoffset, byte[] flvTag)
@@ -184,7 +220,7 @@ public class Channel
 
     public void close()
     {
-        LOGGER.info("{} received in {}", formatBytes(this.size), getTimeDifference(this.startTime));
+        LOGGER.info("{} received in {}", formatBytes(this.size), getTimeDifference());
         for (Iterator<Subscriber> itr = subscribers.iterator(); itr.hasNext(); )
         {
             Subscriber subscriber = itr.next();
@@ -192,34 +228,24 @@ public class Channel
             itr.remove();
         }
         if (rtmpPublisher != null) rtmpPublisher.close();
-
-        try {
-            if (videoOutputStream != null) videoOutputStream.close();
-            if (audioOutputStream != null) audioOutputStream.close();
-        } catch (IOException e) {
-            LOGGER.error("Error closing file output streams", e);
-        }
-
-        if (videoOutputStream != null && audioOutputStream != null) {
-            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " + this.audioPath + " -r 25 -i " + this.videoPath + " -c:v copy -c:a aac -strict experimental -vsync vfr " + this.videoPath.substring(0, this.videoPath.length() - 4) + "mp4";
-            try {
-                Runtime.getRuntime().exec(command);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        saveRecording();
     }
 
-    public String getTimeDifference(Date pastTime) {
+    public String getTimeDifference() {
         Date now = new Date();
-        long diffInMillis = now.getTime() - pastTime.getTime();
+        long diffInMillis = now.getTime() - this.startTime.getTime();
 
         long hours = TimeUnit.MILLISECONDS.toHours(diffInMillis);
         long minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis) - TimeUnit.HOURS.toMinutes(hours);
         StringBuilder result = getStringBuilder(diffInMillis, hours, minutes);
 
         return result.toString().trim();
+    }
+
+    public long getTimeDifferenceInSeconds() {
+        Date now = new Date();
+        long diffInMillis = now.getTime() - this.startTime.getTime();
+        return diffInMillis / 1000;
     }
 
     private static StringBuilder getStringBuilder(long diffInMillis, long hours, long minutes) {
