@@ -1,8 +1,5 @@
 package com.tahir.jtt1078.util;
 
-/**
- * Created by matrixy on 2020/1/15.
- */
 public final class HttpChunk
 {
     public static byte[] make(byte[] data)

@@ -4,6 +4,7 @@ import com.tahir.jtt1078.codec.AudioCodec;
 import com.tahir.jtt1078.entity.Media;
 import com.tahir.jtt1078.entity.MediaEncoding;
 import com.tahir.jtt1078.flv.FlvEncoder;
+import com.tahir.jtt1078.recording.FlvRecorder;
 import com.tahir.jtt1078.subscriber.RTMPPublisher;
 import com.tahir.jtt1078.subscriber.Subscriber;
 import com.tahir.jtt1078.subscriber.VideoSubscriber;
@@ -51,6 +52,7 @@ public class Channel
     private boolean recordingMode;
     private String subDirectory;
     private int recordingClipDuration; // seconds
+    private FlvRecorder recorder;
 
     public Channel(String tag)
     {
@@ -69,8 +71,14 @@ public class Channel
         if (recordingMode) {
             recordingDir = Configs.get("recording.path");
             recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
-            prepareRecordingDir();
-            prepareRecording();
+            try {
+                prepareRecordingDir(); // creates subDirectory
+                recorder = new FlvRecorder(subDirectory, this.flvEncoder, recordingClipDuration);
+                recorder.start();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            // prepareRecording();
         } else {
             this.startTime = new Date();
         }
@@ -78,7 +86,7 @@ public class Channel
 
     public void prepareRecordingDir() {
         if (!StringUtils.isEmpty(recordingDir)) {
-            this.subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
+            subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
             LOGGER.info("Recording Directory: {}", subDirectory );
             File directory = new File(subDirectory);
             if (!directory.exists()) {
@@ -150,16 +158,20 @@ public class Channel
 
         byte[] pcmData = audioCodec.toPCM(data);
 
-        if (audioOutputStream != null) {
-            try {
-                audioOutputStream.write(pcmData);
-                audioOutputStream.flush();
-            } catch (IOException e) {
-                LOGGER.error("Error writing audio data to file", e);
-            }
-        }
+//        if (audioOutputStream != null) {
+//            try {
+//                audioOutputStream.write(pcmData);
+//                audioOutputStream.flush();
+//            } catch (IOException e) {
+//                LOGGER.error("Error writing audio data to file", e);
+//            }
+//        }
 
         broadcastAudio(timestamp, pcmData);
+        if (recordingMode) {
+            recorder.recordAudioData(timestamp, pcmData, flvEncoder);
+        }
+
     }
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264) {
@@ -174,14 +186,14 @@ public class Channel
             if (nalu == null) break;
             if (nalu.length < 4) continue;
 
-            if (videoOutputStream != null) {
-                try {
-                    videoOutputStream.write(nalu);
-                    videoOutputStream.flush();
-                } catch (IOException e) {
-                    LOGGER.error("Error writing video data to file", e);
-                }
-            }
+//            if (videoOutputStream != null) {
+//                try {
+//                    videoOutputStream.write(nalu);
+//                    videoOutputStream.flush();
+//                } catch (IOException e) {
+//                    LOGGER.error("Error writing video data to file", e);
+//                }
+//            }
 
             byte[] flvTag = this.flvEncoder.write(nalu, (int) (timeoffset - firstTimestamp));
 
@@ -189,6 +201,9 @@ public class Channel
 
             // Broadcast to all viewers
             broadcastVideo(timeoffset, flvTag);
+            if (recordingMode) {
+                recorder.recordVideoData(timeoffset, flvTag, flvEncoder);
+            }
         }
 
         if (recordingMode) {
@@ -243,7 +258,8 @@ public class Channel
         if (rtmpPublisher != null) rtmpPublisher.close();
 
         if (recordingMode) {
-            saveRecording();
+            // saveRecording();
+            recorder.stopRecording();
         }
     }
 
