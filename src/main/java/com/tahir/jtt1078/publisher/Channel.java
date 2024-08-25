@@ -4,10 +4,9 @@ import com.tahir.jtt1078.codec.AudioCodec;
 import com.tahir.jtt1078.entity.Media;
 import com.tahir.jtt1078.entity.MediaEncoding;
 import com.tahir.jtt1078.flv.FlvEncoder;
-import com.tahir.jtt1078.recording.FlvRecorder;
 import com.tahir.jtt1078.subscriber.RTMPPublisher;
 import com.tahir.jtt1078.subscriber.Subscriber;
-import com.tahir.jtt1078.subscriber.VideoSubscriber;
+import com.tahir.jtt1078.subscriber.VideoRecorder;
 import com.tahir.jtt1078.util.ByteHolder;
 import com.tahir.jtt1078.util.Configs;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,12 +14,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,25 +32,19 @@ public class Channel
     AudioCodec audioCodec;
     FlvEncoder flvEncoder;
     private long firstTimestamp = -1;
-
-    private FileOutputStream videoOutputStream;
-    private FileOutputStream audioOutputStream;
-
-    private String videoPath;
-    private String audioPath;
-
-    private Date startTime;
     private long size;
-    private String recordingDir;
-    private boolean recordingMode;
-    private String subDirectory;
-    private int recordingClipDuration; // seconds
-    private FlvRecorder recorder;
+    protected Date startTime;
 
     public Channel(String tag)
     {
         this.tag = tag;
-        this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
+        this.subscribers = new ConcurrentLinkedQueue<>();
+
+        Subscriber recorder = new VideoRecorder(this.tag, null);
+        recorder.setName("Recording: " + tag + "-" + recorder.getId());
+        recorder.start();
+        this.subscribers.add(recorder);
+
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
 
@@ -66,74 +53,7 @@ public class Channel
             this.rtmpPublisher.start();
         }
 
-        recordingMode = Configs.getBoolean("recording.mode");
-
-        if (recordingMode) {
-            recordingDir = Configs.get("recording.path");
-            recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
-            try {
-                prepareRecordingDir(); // creates subDirectory
-                recorder = new FlvRecorder(subDirectory, this.flvEncoder, recordingClipDuration);
-                recorder.start();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            // prepareRecording();
-        } else {
-            this.startTime = new Date();
-        }
-    }
-
-    public void prepareRecordingDir() {
-        if (!StringUtils.isEmpty(recordingDir)) {
-            subDirectory = (recordingDir + "/" +  tag).replace("/", "\\");
-            LOGGER.info("Recording Directory: {}", subDirectory );
-            File directory = new File(subDirectory);
-            if (!directory.exists()) {
-                if (directory.mkdirs()) {
-                    System.out.println("Directory created: " + subDirectory);
-                } else {
-                    System.out.println("Failed to create directory: " + subDirectory);
-                }
-            }
-        }
-    }
-
-    private void prepareRecording() {
         this.startTime = new Date();
-        String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        this.size = 0L;
-        this.videoPath = (subDirectory + "\\video_" + formattedDateTime + ".h264");
-        this.audioPath = (subDirectory + "\\audio_" + formattedDateTime + ".pcm");
-
-        try {
-            this.videoOutputStream = new FileOutputStream(this.videoPath);
-            this.audioOutputStream = new FileOutputStream(this.audioPath);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void saveRecording() {
-        try {
-            if (videoOutputStream != null) videoOutputStream.close();
-            if (audioOutputStream != null) audioOutputStream.close();
-        } catch (IOException e) {
-            LOGGER.error("Error closing file output streams", e);
-        }
-
-        if (videoOutputStream != null && audioOutputStream != null) {
-            String command = "ffmpeg -f s16le -ar 8000 -ac 1 -i " +
-                    this.audioPath + " -r 25 -i " + this.videoPath +
-                    " -c:v copy -c:a aac -strict experimental -vsync vfr " +
-                    this.videoPath.substring(0, this.videoPath.length() - 4) +
-                    "mp4";
-            try {
-                Runtime.getRuntime().exec(command);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     public boolean isPublishing()
@@ -143,7 +63,7 @@ public class Channel
 
     public Subscriber subscribe(ChannelHandlerContext ctx) {
         LOGGER.info("Channel: {} -> {}, Subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
-        Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
+        Subscriber subscriber = new VideoRecorder(this.tag, null);
         this.subscribers.add(subscriber);
         return subscriber;
     }
@@ -157,21 +77,7 @@ public class Channel
         }
 
         byte[] pcmData = audioCodec.toPCM(data);
-
-//        if (audioOutputStream != null) {
-//            try {
-//                audioOutputStream.write(pcmData);
-//                audioOutputStream.flush();
-//            } catch (IOException e) {
-//                LOGGER.error("Error writing audio data to file", e);
-//            }
-//        }
-
         broadcastAudio(timestamp, pcmData);
-        if (recordingMode) {
-            recorder.recordAudioData(timestamp, pcmData, flvEncoder);
-        }
-
     }
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264) {
@@ -186,33 +92,11 @@ public class Channel
             if (nalu == null) break;
             if (nalu.length < 4) continue;
 
-//            if (videoOutputStream != null) {
-//                try {
-//                    videoOutputStream.write(nalu);
-//                    videoOutputStream.flush();
-//                } catch (IOException e) {
-//                    LOGGER.error("Error writing video data to file", e);
-//                }
-//            }
-
             byte[] flvTag = this.flvEncoder.write(nalu, (int) (timeoffset - firstTimestamp));
 
             if (flvTag == null) continue;
 
-            // Broadcast to all viewers
             broadcastVideo(timeoffset, flvTag);
-            if (recordingMode) {
-                recorder.recordVideoData(timeoffset, flvTag, flvEncoder);
-            }
-        }
-
-        if (recordingMode) {
-            long elapsedTime = getTimeDifferenceInSeconds();
-            System.out.println("Elapsed Time: " + elapsedTime);
-            if (elapsedTime  > recordingClipDuration) {
-                saveRecording();
-                prepareRecording();
-            }
         }
     }
 
@@ -256,16 +140,11 @@ public class Channel
             itr.remove();
         }
         if (rtmpPublisher != null) rtmpPublisher.close();
-
-        if (recordingMode) {
-            // saveRecording();
-            recorder.stopRecording();
-        }
     }
 
     public String getTimeDifference() {
         Date now = new Date();
-        long diffInMillis = now.getTime() - this.startTime.getTime();
+        long diffInMillis = now.getTime() - startTime.getTime();
 
         long hours = TimeUnit.MILLISECONDS.toHours(diffInMillis);
         long minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis) - TimeUnit.HOURS.toMinutes(hours);
@@ -276,7 +155,7 @@ public class Channel
 
     public long getTimeDifferenceInSeconds() {
         Date now = new Date();
-        long diffInMillis = now.getTime() - this.startTime.getTime();
+        long diffInMillis = now.getTime() - startTime.getTime();
         return diffInMillis / 1000;
     }
 

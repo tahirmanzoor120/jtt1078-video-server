@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,7 +26,7 @@ public abstract class Subscriber extends Thread
         this.tag = tag;
         this.context = ctx;
         this.lock = new Object();
-        this.messages = new LinkedList<byte[]>();
+        this.messages = new LinkedList<>();
 
         this.id = SEQUENCE.getAndAdd(1L);
     }
@@ -56,20 +57,15 @@ public abstract class Subscriber extends Thread
 
     public void run()
     {
-        loop : while (!this.isInterrupted())
-        {
-            try
-            {
+        while (!this.isInterrupted()) {
+            try {
                 byte[] data = take();
                 if (data != null) send(data).await();
-            }
-            catch(Exception ex)
-            {
+            } catch (Exception ex) {
                 // When destroying the thread, if there is a lock wait,
                 // the thread will not be destroyed and InterruptedException will be thrown.
-                if (ex instanceof InterruptedException)
-                {
-                    break loop;
+                if (ex instanceof InterruptedException) {
+                    break;
                 }
                 LOGGER.error("send failed", ex);
             }
