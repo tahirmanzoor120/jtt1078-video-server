@@ -26,8 +26,8 @@ public class Jtt1078Decoder
         }
 
         if ((buffer.getInt(0) & 0x7fffffff) != 0x30316364) {
-            String dump = ByteUtils.toString(buffer.array(30));
-            LOGGER.info("Unknown Data: " + dump);
+            // String dump = ByteUtils.toString(buffer.array(30));
+            // LOGGER.info("Unknown Data: " + dump);
             return null;
         }
 

@@ -7,6 +7,7 @@ import com.tahir.jtt1078.flv.FlvEncoder;
 import com.tahir.jtt1078.subscriber.RTMPPublisher;
 import com.tahir.jtt1078.subscriber.Subscriber;
 import com.tahir.jtt1078.subscriber.VideoRecorder;
+import com.tahir.jtt1078.subscriber.VideoSubscriber;
 import com.tahir.jtt1078.util.ByteHolder;
 import com.tahir.jtt1078.util.Configs;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,16 +35,21 @@ public class Channel
     private long firstTimestamp = -1;
     private long size;
     protected Date startTime;
+    private boolean recordingMode;
 
     public Channel(String tag)
     {
         this.tag = tag;
         this.subscribers = new ConcurrentLinkedQueue<>();
 
-        Subscriber recorder = new VideoRecorder(this.tag, null);
-        recorder.setName("Recording: " + tag + "-" + recorder.getId());
-        recorder.start();
-        this.subscribers.add(recorder);
+        recordingMode = Configs.getBoolean("recording.mode");
+
+        if (recordingMode) {
+            Subscriber recorder = new VideoRecorder(this.tag, null);
+            recorder.setName("Recording: " + tag + "-" + recorder.getId());
+            recorder.start();
+            this.subscribers.add(recorder);
+        }
 
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
@@ -63,7 +69,7 @@ public class Channel
 
     public Subscriber subscribe(ChannelHandlerContext ctx) {
         LOGGER.info("Channel: {} -> {}, Subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
-        Subscriber subscriber = new VideoRecorder(this.tag, null);
+        Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
         this.subscribers.add(subscriber);
         return subscriber;
     }

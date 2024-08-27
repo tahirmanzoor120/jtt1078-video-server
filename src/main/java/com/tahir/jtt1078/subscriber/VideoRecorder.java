@@ -36,7 +36,6 @@ public class VideoRecorder extends Subscriber
     // ---- RECORDER ------ //
 
     private FileOutputStream outputStream;
-    private boolean recordingMode;
     private String directory;
     private String path;
     private int recordingClipDuration; // seconds
@@ -45,14 +44,9 @@ public class VideoRecorder extends Subscriber
     public VideoRecorder(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
-
-        recordingMode = Configs.getBoolean("recording.mode");
-
-        if (recordingMode) {
-            recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
-            String path = Configs.get("recording.path");
-            prepareRecordingDir(path, tag); // creates subDirectory
-        }
+        recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
+        String path = Configs.get("recording.path");
+        prepareRecordingDir(path, tag); // creates subDirectory
     }
 
     public void prepareRecordingDir(String dir, String tag) {
@@ -103,12 +97,10 @@ public class VideoRecorder extends Subscriber
             try {
                 byte[] data = take();
                 if (data != null) writeData(data);
-                LOGGER.info("Recording data...");
             } catch (Exception ex) {
                 // When destroying the thread, if there is a lock wait,
                 // the thread will not be destroyed and InterruptedException will be thrown.
                 if (ex instanceof InterruptedException) {
-                    LOGGER.info("Saving ...");
                     saveRecording();
                     break;
                 }
