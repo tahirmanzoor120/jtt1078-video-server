@@ -38,13 +38,14 @@ public class VideoRecorder extends Subscriber
     private FileOutputStream outputStream;
     private String directory;
     private String path;
-    private int recordingClipDuration; // seconds
-    private boolean isRecordingStarted;
+
+    // private int recordingClipDuration; // seconds
+    // private boolean isRecordingStarted;
 
     public VideoRecorder(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
-        recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
+        // recordingClipDuration = Configs.getInt("recording.clip.duration", 60);
         String path = Configs.get("recording.path");
         prepareRecordingDir(path, tag); // creates subDirectory
     }

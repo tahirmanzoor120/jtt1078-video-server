@@ -33,7 +33,7 @@ public class VideoServerApp
         if (recordingMode) {
             String recordingPath = Configs.get("recording.path");
             LOGGER.info("Recording directory: {}", recordingPath);
-            LOGGER.info("Clip duration: {} seconds", Configs.getInt("recording.clip.duration", 60));
+            // LOGGER.info("Clip duration: {} seconds", Configs.getInt("recording.clip.duration", 60));
         }
 
         PublishManager.init();
