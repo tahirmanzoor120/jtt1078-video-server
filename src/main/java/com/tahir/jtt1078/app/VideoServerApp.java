@@ -39,31 +39,27 @@ public class VideoServerApp
         PublishManager.init();
         SessionManager.init();
 
-        VideoServer videoServer = new VideoServer();
-        HttpServer httpServer = new HttpServer();
-
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                videoServer.shutdown();
-                httpServer.shutdown();
+                VideoServer.shutdown();
+                HttpServer.shutdown();
             }
         });
 
-        videoServer.start();
-        httpServer.start();
+        VideoServer.start();
+        HttpServer.start();
     }
 
     static class VideoServer
     {
-        private static ServerBootstrap serverBootstrap;
 
         private static EventLoopGroup bossGroup;
         private static EventLoopGroup workerGroup;
 
         private static void start() throws Exception
         {
-            serverBootstrap = new ServerBootstrap();
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.option(ChannelOption.SO_BACKLOG, Configs.getInt("server.backlog", 102400));
             bossGroup = new NioEventLoopGroup(Configs.getInt("server.worker-count", Runtime.getRuntime().availableProcessors()));
             workerGroup = new NioEventLoopGroup();
